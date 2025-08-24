@@ -1,4 +1,4 @@
-# Weather Web App
+# Weather AI Web App
 
 This Weather AI Web App provides real-time weather information and a 5-day forecast for any city or the user's current location. It features interactive charts, a filterable forecast table, and a chatbot powered by Google Gemini API for weather-related queries.
 
