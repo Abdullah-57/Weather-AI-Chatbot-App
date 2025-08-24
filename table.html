@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .spinner 
+        {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 80px; 
+            height: 80px;
+            animation: spin 5s linear infinite;
+            position: relative;
+            z-index: 1000;
+        }
+
+        @keyframes spin 
+        {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-overlay 
+        {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0; 
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        @keyframes fadeIn 
+        {
+            from 
+            {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to 
+            {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-container 
+        {
+            position: fixed;
+            bottom: 0;
+            right: 20px;
+            z-index: 10000;
+            width: 300px;
+            max-width: 100%;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: none;
+        }
+
+        .chat-header 
+        {
+            background-color: #4a76a8;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        #close-chatbot 
+        {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #555;
+            margin-left: auto;
+            transition: color 0.3s ease;
+        }
+
+        #close-chatbot:hover 
+        {
+            color: #000;
+        }
+
+        .chat-body 
+        {
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .chat-footer 
+        {
+            padding: 10px;
+            background-color: #f1f1f1;
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-footer input 
+        {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 8px;
+            margin-right: 10px;
+        }
+
+        .chat-footer button 
+        {
+            background-color: #0077ff;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .toggle-chatbot 
+        {
+            position: fixed;
+            bottom: 10px;
+            right: 20px;
+            background-color: #0077ff;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 9999;
+        }
+
+        @media (max-width: 640px) 
+        {
+            .chat-container 
+            {
+                width: 100%;
+                max-width: none;
+                bottom: 0;
+                right: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex flex-col md:flex-row">
+        <div class="w-full lg:w-1/6 bg-gray-800 text-white p-4">
+            <div class="flex items-center mb-6">
+                <img src="images/logo.jpg" alt="Weather App Logo" class="w-10 h-10 mr-2">
+                <h1 class="text-md font-bold">Weather App</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li class="mb-4">
+                        <a href="index.html" id="dashboardLink" class="block py-2 px-3 bg-gray-700 rounded transition duration-300 hover:bg-gray-600">Dashboard</a>
+                    </li>
+                    <li>
+                        <a href="table.html" id="tablesLink" class="block py-2 px-3 bg-blue-600 rounded transition duration-300 hover:bg-gray-600 active:bg-blue-600">Tables</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <div class="flex-1 p-4 md:p-6 relative">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 space-y-4 md:space-y-0">
+                <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 w-full max-w-3xl mx-auto">
+                    <input id="city-input" type="text" placeholder="Search city..." class="border border-gray-300 p-2 rounded-lg w-full md:w-72 lg:w-96 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="get-weather" class="bg-blue-500 text-white px-4 py-2 rounded-lg transition duration-300 hover:bg-blue-400 w-full md:w-auto">Get Weather</button>
+                    <select id="temp-select" title="Temperature Unit Select" class="border border-gray-300 p-2 rounded-lg w-full md:w-32 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="" disabled selected>Temperature</option>
+                        <option value="metric">Celsius</option>
+                        <option value="imperial">Fahrenheit</option>
+                    </select>
+                    <select id="filter-select" title="Filter Select" class="border border-gray-300 p-2 rounded-lg w-full md:w-32 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="" disabled selected>Filter</option>
+                        <option value="none">None (No Filter)</option>
+                        <option value="asc">Ascending Temperature</option>
+                        <option value="desc">Descending Temperature</option>
+                        <option value="rainy">Show Only Rainy Days</option>
+                        <option value="highest">Highest Temperature</option>
+                    </select>
+                    <button id="get-location" class="bg-blue-500 text-white px-4 py-2 rounded-lg transition duration-300 hover:bg-blue-400 w-full md:w-auto">Use My Location</button>
+                </div>
+                    <div class="relative left-2 w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center cursor-pointer">
+                        <img src="images/profilepic.jpeg" alt="User Profile" class="rounded-full">
+                    </div>
+                </div>
+
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-lg mb-6 transition duration-500 ease-in-out opacity-0 transform scale-95" style="animation: fadeIn 0.5s forwards;">
+                <h2 id="weather-title" class="text-lg sm:text-xl font-bold mb-4">Weather Forecast</h2>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full w-full table-auto text-sm sm:text-base">
+                        <thead>
+                            <tr class="bg-gray-200">
+                                <th class="px-2 sm:px-4 py-2">Date</th>
+                                <th class="px-2 sm:px-4 py-2">Time</th>
+                                <th class="px-2 sm:px-4 py-2">Temperature</th>
+                                <th class="px-2 sm:px-4 py-2">Condition</th>
+                            </tr>
+                        </thead>
+                        <tbody id="forecast-table-body">
+
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="pagination" class="flex justify-center mt-4 sm:mt-6 hidden">
+                    <button id="prev-page" class="bg-gray-200 px-3 py-2 mx-1 rounded-lg transition duration-300 hover:bg-gray-300">Previous</button>
+                    <span id="page-numbers" class="mx-1"></span>
+                    <button id="next-page" class="bg-gray-200 px-3 py-2 mx-1 rounded-lg transition duration-300 hover:bg-gray-300">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="toggle-chatbot flex items-center justify-center cursor-pointer text-3xl hover:bg-blue-400" id="toggle-chatbot">
+        💬
+    </div>
+
+    <div class="chat-container hidden flex flex-col bg-white rounded-lg shadow-lg w-80 sm:w-96" id="chat-container">
+        <div class="chat-header bg-blue-400 font-bold text-lg p-4 border-b flex justify-between items-center">
+            Weather Assistant
+            <button id="close-chatbot" class="text-xl text-white hover:text-gray-800 focus:outline-none ml-2">
+                &times;
+            </button>
+        </div>
+        <div class="chat-body overflow-y-auto h-60 p-4" id="chat-messages">
+
+        </div>
+        <div class="chat-footer flex p-4 border-t">
+            <input type="text" id="userInput" placeholder="Type your message..." class="flex-grow border rounded-lg p-2 mr-2" />
+            <button id="sendButton" class="bg-blue-400 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md">Send</button>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+    
+   <script>
+        const API_KEY = '351a96b79ab7e56ab8fbf8b0a8ed9385';
+        const forecastDataContainer = document.getElementById('forecast-table-body');
+        const weatherTitle = document.getElementById('weather-title'); 
+        const searchButton = document.getElementById('get-weather');
+        const cityInput = document.getElementById('city-input');
+        const tempSelect = document.getElementById('temp-select');
+        const locationButton = document.getElementById('get-location');
+        const filterSelect = document.getElementById('filter-select');
+        const prevButton = document.getElementById('prev-page');
+        const nextButton = document.getElementById('next-page');
+
+        let forecastData = [];
+        let currentPage = 0;
+        const itemsPerPage = 10;
+
+        async function getWeather(city, unit = 'metric') 
+        {
+            const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=${unit}`;
+            document.getElementById('loading-overlay').style.display = 'flex';
+
+            try 
+            {
+                const forecastResponse = await fetch(forecastUrl);
+
+                if (!forecastResponse.ok) 
+                {
+                    throw new Error('City not found');
+                }
+
+                forecastData = await forecastResponse.json();
+                currentPage = 0;
+
+                weatherTitle.textContent = `Weather Forecast for ${forecastData.city.name}`;
+
+                displayForecast(forecastData, unit); 
+            } 
+            catch (error) 
+            {
+                alert(error.message);
+                weatherTitle.textContent = 'Weather Forecast'; 
+            } 
+            finally 
+            {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        function filterForecast(data) 
+        {
+            const filterValue = filterSelect.value;
+            let filteredData = [...data.list];
+
+            switch (filterValue) 
+            {
+                case 'asc':
+                    filteredData.sort((a, b) => a.main.temp - b.main.temp);
+                    break;
+                case 'desc':
+                    filteredData.sort((a, b) => b.main.temp - a.main.temp);
+                    break;
+                case 'rainy':
+                    filteredData = filteredData.filter(forecast => forecast.weather[0].main.toLowerCase() === 'rain');
+                    break;
+                case 'highest':
+                    filteredData = filteredData.slice().sort((a, b) => b.main.temp - a.main.temp).slice(0, 1);
+                    break;
+                case 'none':
+                default:
+                    break;
+            }
+
+            return filteredData;
+        }
+
+        function displayForecast(data, unit = 'metric') 
+        {
+            forecastDataContainer.innerHTML = '';
+            const dailyForecast = filterForecast(data);
+            const totalPages = Math.ceil(dailyForecast.length / itemsPerPage);
+
+
+            if (dailyForecast.length === 0) 
+            {
+                forecastDataContainer.innerHTML = `
+                    <tr class="bg-white">
+                        <td colspan="4" class="border px-4 py-2 text-center">No Data Available</td>
+                    </tr>
+                `;
+
+                document.getElementById('pagination').style.display = 'none';
+                return; 
+            }
+
+            const startIndex = currentPage * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const forecastToDisplay = dailyForecast.slice(startIndex, endIndex);
+
+            let tableHTML = ``;
+
+            forecastToDisplay.forEach(forecast => {
+                const date = new Date(forecast.dt * 1000).toLocaleDateString();
+                const time = new Date(forecast.dt * 1000).toLocaleTimeString();
+                const temperature = forecast.main.temp;
+                const condition = forecast.weather[0].description;
+
+                tableHTML += `
+                    <tr class="bg-white">
+                        <td class="border px-4 py-2">${date}</td>
+                        <td class="border px-4 py-2">${time}</td>
+                        <td class="border px-4 py-2">${temperature.toFixed(1)}</td>
+                        <td class="border px-4 py-2">${condition}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += '</tbody></table>';
+
+            forecastDataContainer.innerHTML = tableHTML;
+
+            document.getElementById('pagination').style.display = totalPages > 1 ? 'block' : 'none';
+            document.getElementById('page-numbers').textContent = `${currentPage + 1} / ${totalPages}`;
+        }
+
+
+
+//         function displayForecast(data, unit = 'metric') 
+//     {
+//     forecastDataContainer.innerHTML = '';
+    
+//     const groupedByDay = {};
+
+//     data.list.forEach(forecast => {
+//         const date = new Date(forecast.dt * 1000).toISOString().split('T')[0];
+
+//         if (!groupedByDay[date]) {
+//             groupedByDay[date] = [];
+//         }
+
+//         groupedByDay[date].push(forecast);
+//     });
+//     const dailyForecast = Object.values(groupedByDay).map(dayForecasts => {
+//         return dayForecasts.reduce((closest, current) => {
+//             const currentHour = new Date(current.dt * 1000).getUTCHours();
+//             const closestHour = new Date(closest.dt * 1000).getUTCHours();
+//             return Math.abs(currentHour - 12) < Math.abs(closestHour - 12) ? current : closest;
+//         });
+//     });
+
+//     const forecastToDisplay = dailyForecast.slice(0, 5);
+
+//     if (forecastToDisplay.length === 0) 
+//     {
+//         forecastDataContainer.innerHTML = `
+//             <tr class="bg-white">
+//                 <td colspan="4" class="border px-4 py-2 text-center">No Data Available</td>
+//             </tr>
+//         `;
+//         document.getElementById('pagination').style.display = 'none';
+//         return; 
+//     }
+
+//     let tableHTML = ``;
+
+//     forecastToDisplay.forEach(forecast => {
+//         const date = new Date(forecast.dt * 1000).toLocaleDateString();
+//         const time = new Date(forecast.dt * 1000).toLocaleTimeString();
+//         const temperature = forecast.main.temp;
+//         const condition = forecast.weather[0].description;
+
+//         tableHTML += `
+//             <tr class="bg-white">
+//                 <td class="border px-4 py-2">${date}</td>
+//                 <td class="border px-4 py-2">${time}</td>
+//                 <td class="border px-4 py-2">${temperature.toFixed(1)}</td>
+//                 <td class="border px-4 py-2">${condition}</td>
+//             </tr>
+//         `;
+//     });
+
+//     forecastDataContainer.innerHTML = tableHTML;
+//     document.getElementById('pagination').style.display = 'none';
+// }
+
+
+        searchButton.addEventListener('click', () => {
+            const city = cityInput.value;
+            const unit = tempSelect.value || 'metric';
+
+            if (city) 
+            {
+                getWeather(city, unit);
+            }
+        });
+
+        filterSelect.addEventListener('change', () => {
+            currentPage = 0;
+            displayForecast(forecastData);
+        });
+
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 0) 
+            {
+                currentPage--;
+                displayForecast(forecastData);
+            }
+        });
+
+        nextButton.addEventListener('click', () => {
+            const totalPages = Math.ceil(filterForecast(forecastData).length / itemsPerPage);
+
+            if (currentPage < totalPages - 1) 
+            {
+                currentPage++;
+                displayForecast(forecastData);
+            }
+        });
+
+        async function getCurrentLocationWeather() 
+        {
+            document.getElementById('loading-overlay').style.display = 'flex';
+
+            if (navigator.geolocation) 
+            {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const unit = tempSelect.value || 'metric'; 
+                    const locationUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=${unit}`; 
+
+                    try 
+                    {
+                        const response = await fetch(locationUrl);
+
+                        if (!response.ok) 
+                        {
+                            throw new Error('Unable to retrieve location data');
+                        }
+
+                        forecastData = await response.json();
+                        currentPage = 0;
+
+                        weatherTitle.textContent = `Weather Forecast for ${forecastData.city.name}`;
+
+                        displayForecast(forecastData, unit); 
+
+                    } 
+                    catch (error) 
+                    {
+                        alert(error.message);
+                        weatherTitle.textContent = 'Weather Forecast'; 
+                    } 
+                    finally 
+                    {
+                        document.getElementById('loading-overlay').style.display = 'none';
+                    }
+
+                }, (error) => {
+                    alert("Unable to retrieve your location: " + error.message);
+                    document.getElementById('loading-overlay').style.display = 'none';
+                });
+            } 
+            else 
+            {
+                alert("Geolocation is not supported by this browser.");
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        getCurrentLocationWeather();
+
+        locationButton.addEventListener('click', () => {
+            getCurrentLocationWeather(); 
+        });
+
+
+        const toggleButton = document.getElementById('toggle-chatbot');
+        const chatContainer = document.getElementById('chat-container');
+        const closeChatButton = document.getElementById('close-chatbot');
+
+        chatContainer.style.display = 'none';
+
+        toggleButton.addEventListener('click', () => {
+            chatContainer.style.display = 'block';
+            toggleButton.style.display = 'none';
+            document.getElementById('userInput').focus(); 
+        });
+
+        closeChatButton.addEventListener('click', () => {
+            chatContainer.style.display = 'none';
+            toggleButton.style.display = 'block'; 
+        });
+
+        const sendButton = document.getElementById('sendButton');
+        const userInput = document.getElementById('userInput');
+        const chatMessages = document.getElementById('chat-messages');
+
+
+        const OPENWEATHER_API_KEY = '351a96b79ab7e56ab8fbf8b0a8ed9385'; 
+        const GEMINI_API_KEY = 'AIzaSyAPjg9h4uswYofQu4oKq5xcDfVWDt9tWuQ'; 
+        const MODEL_NAME = 'gemini-1.5-flash-latest'; 
+
+        function getDateFromQuery(query) 
+        {
+            const today = new Date();
+            let targetDate = today;
+
+            if (query.includes('tomorrow')) 
+            {
+                targetDate.setDate(today.getDate() + 1);
+            } 
+            else if (query.match(/\b(\d{1,2})(st|nd|rd|th)?\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/i)) 
+            {
+                const dateMatch = query.match(/\b(\d{1,2})(st|nd|rd|th)?\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/i);
+                targetDate = new Date(`${dateMatch[3]} ${dateMatch[1]}, ${today.getFullYear()}`);
+            }
+
+            return targetDate.toISOString().split('T')[0];
+        }
+
+        async function fetchForecastData(city) 
+        {
+            const forecastApiUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+
+            try 
+            {
+                const response = await fetch(forecastApiUrl);
+
+                if (!response.ok) 
+                {
+                    throw new Error('Failed to fetch weather data');
+                }
+
+                const forecastData = await response.json();
+                return forecastData;
+            } 
+            catch (error) 
+            {
+                console.error('Error:', error);
+                throw error;
+            }
+        }
+
+        function extractWeatherForDate(forecastData, targetDate) 
+        {
+            const forecastForDay = forecastData.list.filter(forecast => forecast.dt_txt.startsWith(targetDate));
+
+            if (forecastForDay.length === 0) 
+            {
+                return `No forecast data available for ${targetDate}.`;
+            }
+
+            const morningWeather = forecastForDay[0];
+            const afternoonWeather = forecastForDay[forecastForDay.length - 1];
+            return `Weather on ${targetDate}: Morning: ${morningWeather.main.temp}°C, ${morningWeather.weather[0].description}. Evening: ${afternoonWeather.main.temp}°C, ${afternoonWeather.weather[0].description}.`;
+        }
+
+        function calculateTemperatureStats(forecastData) 
+        {
+            const temperatures = forecastData.list.map(item => item.main.temp);
+            const highest = Math.max(...temperatures);
+            const lowest = Math.min(...temperatures);
+            const average = temperatures.reduce((acc, temp) => acc + temp, 0) / temperatures.length;
+
+            return { highest, lowest, average };
+        }
+
+        function detectTemperatureUnit(query) 
+        {
+            if (query.toLowerCase().includes('fahrenheit')) 
+            {
+                return 'fahrenheit';
+            }
+
+            return 'celsius';
+        }
+
+        function convertTemperature(temp, unit) 
+        {
+            if (unit === 'fahrenheit') 
+            {
+                return (temp * 9/5) + 32; 
+            }
+            return temp;
+        }
+
+        function extractCityAndDate(query) 
+        {
+            const cityMatch = query.match(/\b(?:in|for|at|near|around)\s+([A-Za-z\s]+)/i);
+            const city = cityMatch ? cityMatch[1].trim() : null;
+            const targetDate = getDateFromQuery(query);
+            return { city, targetDate };
+        }
+
+        function displayMessage(text, sender) 
+        {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('flex', sender === 'user' ? 'justify-end' : 'justify-start', 'items-center', 'space-x-2');
+
+            const messageContent = `
+            <div class="flex ${sender === 'user' ? 'flex-row-reverse' : ''} items-start space-x-3 ${sender === 'user' ? 'space-x-reverse' : ''} mb-4">
+                <img class="w-8 h-8 rounded-full" src="${sender === 'user' ? 'images/profilepic.jpeg' : 'images/bot.jpg'}" alt="${sender}">
+                <div class="p-3 rounded-lg max-w-xs text-white ${sender === 'user' ? 'bg-gradient-to-r from-blue-500 to-blue-700' : 'bg-gradient-to-r from-gray-500 to-gray-700'}">
+                    ${text}
+                </div>
+            </div>
+            `;
+
+            messageDiv.innerHTML = messageContent;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function disableSendButton(disable) 
+        {
+            const sendButton = document.getElementById('sendButton');
+            sendButton.disabled = disable;
+        }
+
+        async function runChat(userInput, forecastData, targetDate) 
+        {
+            const weatherInfo = extractWeatherForDate(forecastData, targetDate);
+
+            const { highest, lowest, average } = calculateTemperatureStats(forecastData);
+            const unit = detectTemperatureUnit(userInput);
+
+            const highestTemp = convertTemperature(highest, unit).toFixed(2);
+            const lowestTemp = convertTemperature(lowest, unit).toFixed(2);
+            const averageTemp = convertTemperature(average, unit).toFixed(2);
+
+            const responseText = `
+                ${weatherInfo}
+                Here are the temperature stats for the next 5 days:
+                - Highest: ${highestTemp}°${unit === 'fahrenheit' ? 'F' : 'C'}
+                - Lowest: ${lowestTemp}°${unit === 'fahrenheit' ? 'F' : 'C'}
+                - Average: ${averageTemp}°${unit === 'fahrenheit' ? 'F' : 'C'}
+            `;
+
+            const requestBody = {
+                contents: [
+                    {
+                        parts: [
+                            {
+                                text: `${userInput}\n\nHere is the weather information:\n${responseText}`
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            try 
+            {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) 
+                {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || 'Failed to fetch response');
+                }
+
+                const data = await response.json();
+
+                if (data.candidates && data.candidates.length > 0) 
+                {
+                    return data.candidates[0].content.parts[0].text;
+                } 
+                else 
+                {
+                    throw new Error('Unexpected response structure: No candidates found');
+                }
+            } 
+            catch (error) 
+            {
+                console.error('Error:', error);
+                throw error;
+            }
+        }
+
+        async function fetchLocationForecast() 
+        {
+            return new Promise((resolve, reject) => {
+
+                if (!navigator.geolocation) 
+                {
+                    reject('Geolocation not supported by this browser.');
+                } 
+                else 
+                {
+                    navigator.geolocation.getCurrentPosition(async (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const forecastApiUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+
+                        try 
+                        {
+                            const response = await fetch(forecastApiUrl);
+
+                            if (!response.ok) 
+                            {
+                                throw new Error('Failed to fetch weather data for your location');
+                            }
+
+                            const forecastData = await response.json();
+                            resolve(forecastData);
+                        } 
+                        catch (error) 
+                        {
+                            reject(error);
+                        }
+                    }, (error) => {
+                        reject(error.message);
+                    });
+                }
+            });
+        }
+
+        document.getElementById('sendButton').addEventListener('click', async () => {
+            const userInputElement = document.getElementById('userInput');
+            const userInput = userInputElement.value;
+
+            if (userInput) 
+            {
+                displayMessage(userInput, 'user');
+                disableSendButton(true);
+
+                try 
+                {
+                    const { city, targetDate } = extractCityAndDate(userInput);
+
+                    let forecastData;
+
+                    if (city) 
+                    {
+                        forecastData = await fetchForecastData(city);
+                    } 
+                    else 
+                    {
+                        forecastData = await fetchLocationForecast(); 
+                    }
+
+                    const responseText = await runChat(userInput, forecastData, targetDate);
+                    displayMessage(responseText, 'bot');
+                } 
+                catch (error) 
+                {
+                    console.error('Error:', error);
+                    displayMessage('Sorry, there was an error fetching the weather information.', 'bot');
+                }
+
+                userInputElement.value = ''; 
+                disableSendButton(false);
+            }
+        });
+
+</script>
+
+</body>
+</html>
