@@ -1,6 +1,6 @@
 # Weather Web App
 
-This Weather Web App, developed by **Abdullah Daoud Awan (22I-2626, SE-E)** for the Web Engineering course at FAST – National University of Computer & Emerging Sciences, Islamabad Campus, provides real-time weather information and a 5-day forecast for any city or the user's current location. It features interactive charts, a filterable forecast table, and a chatbot powered by Google Gemini API for weather-related queries.
+This Weather AI Web App provides real-time weather information and a 5-day forecast for any city or the user's current location. It features interactive charts, a filterable forecast table, and a chatbot powered by Google Gemini API for weather-related queries.
 
 ## Features
 
@@ -97,8 +97,3 @@ Contributions are welcome:
 
 ## License
 MIT License - see `LICENSE` for details.
-
-## Contact
-- **Author**: Abdullah Daoud Awan (22I-2626)
-- **Section**: SE-E
-- **Institution**: FAST-NUCES, Islamabad Campus
